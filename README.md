@@ -7,5 +7,5 @@ Enter NASA’s Power of Ten rules: a set of software engineering principles desi
 
 Whether you're launching rockets or just trying to keep production from crashing at 2 AM, these lessons can help you write code that’s more robust, maintainable, and maybe even astronaut-approved. So strap in, and join us for a journey through the Power of Ten—no space suit required!
 
-## Free Consultation Offer
-https://tinyurl.com/th-offer
+## Schedule Time With Me
+https://trailheadtechnology.com/connect/?t=power-of-ten
