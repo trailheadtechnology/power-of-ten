@@ -15,11 +15,13 @@ public sealed class MethodLengthAnalyzer : DiagnosticAnalyzer
 {
     public const int DefaultMaxLines = 60;
 
+    // The warnings this analyzer can raise
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         => ImmutableArray.Create(Descriptors.MethodTooLong);
 
     public override void Initialize(AnalysisContext context)
     {
+        // Skip generated code, run in parallel, and call Check on every method, constructor, and local function
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
         context.RegisterSyntaxNodeAction(Check,
@@ -28,6 +30,7 @@ public sealed class MethodLengthAnalyzer : DiagnosticAnalyzer
 
     private static void Check(SyntaxNodeAnalysisContext ctx)
     {
+        // Gets the name and body, whichever kind of member it is
         var (identifier, body) = ctx.Node switch
         {
             MethodDeclarationSyntax m => (m.Identifier, (SyntaxNode?)m.Body ?? m.ExpressionBody),
@@ -38,6 +41,7 @@ public sealed class MethodLengthAnalyzer : DiagnosticAnalyzer
         if (body is null)
             return;
 
+        // Counts its lines and warns if it's over the limit
         var span = ctx.Node.GetLocation().GetLineSpan();
         var lines = span.EndLinePosition.Line - span.StartLinePosition.Line + 1;
         var max = Options.GetInt(ctx.Options, ctx.Node.SyntaxTree, Options.MaxMethodLines, DefaultMaxLines);

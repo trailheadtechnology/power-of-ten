@@ -17,11 +17,13 @@ public sealed class CompilationSymbolAnalyzer : DiagnosticAnalyzer
 {
     public const int DefaultMaxSymbols = 3;
 
+    // The warnings this analyzer can raise
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         => ImmutableArray.Create(Descriptors.TooManyCompilationSymbols);
 
     public override void Initialize(AnalysisContext context)
     {
+        // Skip generated code, run in parallel, and call Check once per file
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
         context.RegisterSyntaxTreeAction(Check);
@@ -29,6 +31,7 @@ public sealed class CompilationSymbolAnalyzer : DiagnosticAnalyzer
 
     private static void Check(SyntaxTreeAnalysisContext ctx)
     {
+        // Reads every #if and #elif directive in the file
         var root = ctx.Tree.GetRoot(ctx.CancellationToken);
         var conditions = root.DescendantTrivia()
             .Where(t => t.IsKind(SyntaxKind.IfDirectiveTrivia) || t.IsKind(SyntaxKind.ElifDirectiveTrivia))
@@ -38,6 +41,7 @@ public sealed class CompilationSymbolAnalyzer : DiagnosticAnalyzer
         if (conditions.Count == 0)
             return;
 
+        // Collects the distinct symbol names they test
         var symbols = conditions
             .SelectMany(d => d.Condition.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>())
             .Select(id => id.Identifier.Text)
@@ -45,6 +49,7 @@ public sealed class CompilationSymbolAnalyzer : DiagnosticAnalyzer
             .OrderBy(s => s, StringComparer.Ordinal)
             .ToList();
 
+        // Warns when there are more symbols than allowed
         var max = Options.GetInt(ctx.Options, ctx.Tree, Options.MaxCompilationSymbols, DefaultMaxSymbols);
         if (symbols.Count <= max)
             return;

@@ -13,11 +13,13 @@ namespace PowerOfTen.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class UnboundedLoopAnalyzer : DiagnosticAnalyzer
 {
+    // The warnings this analyzer can raise
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         => ImmutableArray.Create(Descriptors.UnboundedLoop);
 
     public override void Initialize(AnalysisContext context)
     {
+        // Skip generated code, run in parallel, and call Check on every while, do, and for loop
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
         context.RegisterSyntaxNodeAction(Check,
@@ -26,6 +28,7 @@ public sealed class UnboundedLoopAnalyzer : DiagnosticAnalyzer
 
     private static void Check(SyntaxNodeAnalysisContext ctx)
     {
+        // Gets the loop's condition and keyword
         var (condition, keyword) = ctx.Node switch
         {
             WhileStatementSyntax w => (w.Condition, w.WhileKeyword),

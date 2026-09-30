@@ -14,17 +14,20 @@ namespace PowerOfTen.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class UnboundedQueryAnalyzer : DiagnosticAnalyzer
 {
+    // Calls that run the query and load the results
     private static readonly ImmutableHashSet<string> MaterializingMethods = ImmutableHashSet.Create(
         "ToList", "ToListAsync",
         "ToArray", "ToArrayAsync",
         "ToDictionary", "ToDictionaryAsync",
         "ToHashSet", "ToHashSetAsync");
 
+    // The warnings this analyzer can raise
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         => ImmutableArray.Create(Descriptors.UnboundedQuery);
 
     public override void Initialize(AnalysisContext context)
     {
+        // Skip generated code, run in parallel, and call Check on every method call when IQueryable exists
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
         context.RegisterCompilationStartAction(start =>
@@ -39,6 +42,7 @@ public sealed class UnboundedQueryAnalyzer : DiagnosticAnalyzer
 
     private static void Check(SyntaxNodeAnalysisContext ctx, INamedTypeSymbol queryable)
     {
+        // Only calls like .ToList()
         var invocation = (InvocationExpressionSyntax)ctx.Node;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return;
@@ -47,6 +51,7 @@ public sealed class UnboundedQueryAnalyzer : DiagnosticAnalyzer
         if (!MaterializingMethods.Contains(name))
             return;
 
+        // Only on an IQueryable with no Take() earlier in the chain
         var receiverType = ctx.SemanticModel.GetTypeInfo(memberAccess.Expression, ctx.CancellationToken).Type;
         if (receiverType is null || !IsQueryable(receiverType, queryable))
             return;

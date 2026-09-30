@@ -9,6 +9,7 @@ internal static class Descriptors
 {
     private const string Category = "PowerOfTen";
 
+    // One descriptor per warning: ID, message, and severity
     public static readonly DiagnosticDescriptor DirectRecursion = new(
         id: "PT0001",
         title: "Avoid recursion",

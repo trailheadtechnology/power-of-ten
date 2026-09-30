@@ -13,18 +13,22 @@ namespace PowerOfTen.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class SingleImplementationInterfaceAnalyzer : DiagnosticAnalyzer
 {
+    // The warnings this analyzer can raise
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         => ImmutableArray.Create(Descriptors.SingleImplementationInterface);
 
     public override void Initialize(AnalysisContext context)
     {
+        // Skip generated code, run in parallel, and track types across the whole compilation
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
         context.RegisterCompilationStartAction(start =>
         {
+            // Interfaces declared here, and the types that implement each one
             var interfaces = new ConcurrentDictionary<INamedTypeSymbol, byte>(SymbolEqualityComparer.Default);
             var implementations = new ConcurrentDictionary<INamedTypeSymbol, ConcurrentBag<INamedTypeSymbol>>(SymbolEqualityComparer.Default);
 
+            // Records every interface and what every type implements
             start.RegisterSymbolAction(ctx =>
             {
                 var type = (INamedTypeSymbol)ctx.Symbol;
@@ -42,6 +46,7 @@ public sealed class SingleImplementationInterfaceAnalyzer : DiagnosticAnalyzer
                 }
             }, SymbolKind.NamedType);
 
+            // Once every type is seen, warns on interfaces with exactly one implementation
             start.RegisterCompilationEndAction(end =>
             {
                 foreach (var iface in interfaces.Keys)

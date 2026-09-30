@@ -20,11 +20,13 @@ public sealed class AssertionDensityAnalyzer : DiagnosticAnalyzer
     public const int DefaultMinAssertions = 2;
     public const int DefaultMinLines = 10;
 
+    // The warnings this analyzer can raise
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         => ImmutableArray.Create(Descriptors.LowAssertionDensity);
 
     public override void Initialize(AnalysisContext context)
     {
+        // Skip generated code, run in parallel, and call Check on every method
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
         context.RegisterSyntaxNodeAction(Check, SyntaxKind.MethodDeclaration);
@@ -32,16 +34,19 @@ public sealed class AssertionDensityAnalyzer : DiagnosticAnalyzer
 
     private static void Check(SyntaxNodeAnalysisContext ctx)
     {
+        // Only public methods with a body
         var method = (MethodDeclarationSyntax)ctx.Node;
         if (method.Body is null || !method.Modifiers.Any(SyntaxKind.PublicKeyword))
             return;
 
+        // Skips methods shorter than the minimum length
         var tree = method.SyntaxTree;
         var minLines = Options.GetInt(ctx.Options, tree, Options.AssertionMinLines, DefaultMinLines);
         var span = method.Body.GetLocation().GetLineSpan();
         if (span.EndLinePosition.Line - span.StartLinePosition.Line + 1 < minLines)
             return;
 
+        // Warns when there are too few assertions
         var minAssertions = Options.GetInt(ctx.Options, tree, Options.MinAssertions, DefaultMinAssertions);
         var count = CountAssertions(method.Body);
         if (count < minAssertions)
@@ -54,13 +59,16 @@ public sealed class AssertionDensityAnalyzer : DiagnosticAnalyzer
 
     private static int CountAssertions(BlockSyntax body)
     {
+        // Counts throw statements and throw expressions
         var throws = body.DescendantNodes().Count(n =>
             n.IsKind(SyntaxKind.ThrowStatement) || n.IsKind(SyntaxKind.ThrowExpression));
 
+        // Counts ThrowIf* and Assert calls
         var helpers = body.DescendantNodes()
             .OfType<InvocationExpressionSyntax>()
             .Count(i => GetMethodName(i) is { } name && (name.StartsWith("ThrowIf") || name == "Assert"));
 
+        // Counts top-level if (...) return; guard clauses
         var guards = body.Statements
             .OfType<IfStatementSyntax>()
             .Count(IsGuardClause);
@@ -70,6 +78,7 @@ public sealed class AssertionDensityAnalyzer : DiagnosticAnalyzer
 
     private static bool IsGuardClause(IfStatementSyntax ifStatement)
     {
+        // An if with no else whose only statement is a return
         if (ifStatement.Else is not null)
             return false;
 
@@ -81,6 +90,7 @@ public sealed class AssertionDensityAnalyzer : DiagnosticAnalyzer
         };
     }
 
+    // The name of the method being called, e.g. ThrowIfNull
     private static string? GetMethodName(InvocationExpressionSyntax invocation) => invocation.Expression switch
     {
         MemberAccessExpressionSyntax m => m.Name.Identifier.Text,

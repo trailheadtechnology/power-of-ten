@@ -13,11 +13,13 @@ namespace PowerOfTen.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class DirectRecursionAnalyzer : DiagnosticAnalyzer
 {
+    // The warnings this analyzer can raise
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         => ImmutableArray.Create(Descriptors.DirectRecursion);
 
     public override void Initialize(AnalysisContext context)
     {
+        // Skip generated code, run in parallel, and call Check on every method call
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
         context.RegisterSyntaxNodeAction(Check, SyntaxKind.InvocationExpression);
@@ -25,6 +27,7 @@ public sealed class DirectRecursionAnalyzer : DiagnosticAnalyzer
 
     private static void Check(SyntaxNodeAnalysisContext ctx)
     {
+        // Resolves the method being called
         var invocation = (InvocationExpressionSyntax)ctx.Node;
         if (ctx.SemanticModel.GetSymbolInfo(invocation, ctx.CancellationToken).Symbol is not IMethodSymbol target)
             return;
@@ -34,6 +37,7 @@ public sealed class DirectRecursionAnalyzer : DiagnosticAnalyzer
         if (enclosing is null)
             return;
 
+        // Warns if it's the method we're already in
         var callee = target.ReducedFrom ?? target;
         if (SymbolEqualityComparer.Default.Equals(callee.OriginalDefinition, enclosing.OriginalDefinition))
         {

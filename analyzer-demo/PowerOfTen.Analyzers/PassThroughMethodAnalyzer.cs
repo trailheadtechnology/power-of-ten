@@ -15,11 +15,13 @@ namespace PowerOfTen.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class PassThroughMethodAnalyzer : DiagnosticAnalyzer
 {
+    // The warnings this analyzer can raise
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         => ImmutableArray.Create(Descriptors.PassThroughMethod);
 
     public override void Initialize(AnalysisContext context)
     {
+        // Skip generated code, run in parallel, and call Check on every method
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
         context.RegisterSyntaxNodeAction(Check, SyntaxKind.MethodDeclaration);
@@ -27,6 +29,7 @@ public sealed class PassThroughMethodAnalyzer : DiagnosticAnalyzer
 
     private static void Check(SyntaxNodeAnalysisContext ctx)
     {
+        // Skips overrides and methods with no parameters
         var method = (MethodDeclarationSyntax)ctx.Node;
         if (method.Modifiers.Any(SyntaxKind.OverrideKeyword))
             return;
@@ -35,6 +38,7 @@ public sealed class PassThroughMethodAnalyzer : DiagnosticAnalyzer
         if (parameters.Count == 0)
             return;
 
+        // The body must be one call with one argument per parameter
         if (GetSingleExpression(method) is not InvocationExpressionSyntax invocation)
             return;
 
@@ -42,6 +46,7 @@ public sealed class PassThroughMethodAnalyzer : DiagnosticAnalyzer
         if (arguments.Count != parameters.Count)
             return;
 
+        // Each argument must be the matching parameter, in order
         for (var i = 0; i < arguments.Count; i++)
         {
             if (arguments[i].NameColon is not null
