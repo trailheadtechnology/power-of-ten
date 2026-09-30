@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="PowerOfTen.Analyzers.Tests/PowerOfTen.Analyzers.Tests.csproj" />
+  <Project Path="PowerOfTen.Analyzers/PowerOfTen.Analyzers.csproj" />
+  <Project Path="SampleApp/SampleApp.csproj" />
+</Solution>

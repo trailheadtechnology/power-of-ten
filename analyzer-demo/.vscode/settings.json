@@ -1,0 +1,9 @@
+{
+  // Open this folder (analyzer-demo) in VS Code with the C# Dev Kit extension installed.
+  "dotnet.defaultSolution": "PowerOfTen.slnx",
+
+  // Analyze every file, not just open ones. PT0009A needs the whole compilation,
+  // so it only appears in the Problems panel with this set to fullSolution.
+  "dotnet.backgroundAnalysis.analyzerDiagnosticsScope": "fullSolution",
+  "dotnet.backgroundAnalysis.compilerDiagnosticsScope": "fullSolution"
+}

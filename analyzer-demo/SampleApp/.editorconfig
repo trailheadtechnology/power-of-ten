@@ -1,0 +1,26 @@
+# Power of Ten demo settings for SampleApp
+
+[*.cs]
+
+# Rule 2 severity
+#dotnet_diagnostic.PT0002.severity = error
+
+# Rule 4: Holzmann's "one printed page" is about 60 lines. This team is stricter.
+power_of_ten.max_method_lines = 40
+
+# Rule 5: public methods of 10+ lines need at least 2 assertions (these are the defaults)
+power_of_ten.min_assertions = 2
+power_of_ten.assertion_min_lines = 10
+
+# Rule 8: more than 3 #if symbols in one file gets flagged (the default)
+power_of_ten.max_compilation_symbols = 3
+
+# Rule 9 checks are judgment calls, so they ship as Info. Raise them for the demo.
+dotnet_diagnostic.PT0009A.severity = warning
+dotnet_diagnostic.PT0009B.severity = warning
+
+# Rule 7 is already covered by a built-in .NET analyzer
+dotnet_diagnostic.CA1806.severity = warning
+
+# Demo step: make a rule fail the build
+# dotnet_diagnostic.PT0002.severity = error
